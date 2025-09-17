@@ -1,0 +1,27 @@
+{
+  "index_patterns": ["orderbook_snapshots_v1"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": false,
+      "properties": {
+        "market_id": {"type": "keyword"},
+        "ts": {"type": "date"},
+        "side": {"type": "keyword"},
+        "levels": {
+          "type": "nested",
+          "properties": {
+            "price": {"type": "float"},
+            "size": {"type": "float"},
+            "level": {"type": "integer"}
+          }
+        }
+      }
+    }
+  },
+  "priority": 100
+}
+

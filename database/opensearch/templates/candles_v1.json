@@ -1,0 +1,24 @@
+{
+  "index_patterns": ["candles_v1"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": false,
+      "properties": {
+        "market_id": {"type": "keyword"},
+        "interval": {"type": "keyword"},
+        "open_time": {"type": "date"},
+        "open": {"type": "float"},
+        "high": {"type": "float"},
+        "low": {"type": "float"},
+        "close": {"type": "float"},
+        "volume": {"type": "float"}
+      }
+    }
+  },
+  "priority": 100
+}
+

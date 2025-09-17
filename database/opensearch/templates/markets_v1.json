@@ -1,0 +1,23 @@
+{
+  "index_patterns": ["markets_v1"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": true,
+      "properties": {
+        "id": {"type": "keyword"},
+        "market_id": {"type": "keyword"},
+        "title": {"type": "text", "fields": {"raw": {"type": "keyword"}}},
+        "category": {"type": "keyword"},
+        "status": {"type": "keyword"},
+        "created_at": {"type": "date"},
+        "close_time": {"type": "date"}
+      }
+    }
+  },
+  "priority": 100
+}
+

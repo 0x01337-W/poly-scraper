@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2.14.0
+    container_name: opensearch
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - plugins.security.disabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - polyscraper
+    volumes:
+      - os-data:/usr/share/opensearch/data
+
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:2.14.0
+    container_name: opensearch-dashboards
+    ports:
+      - "5601:5601"
+    environment:
+      OPENSEARCH_HOSTS: 'http://opensearch:9200'
+    depends_on:
+      - opensearch
+    networks:
+      - polyscraper
+
+  api:
+    build: ./api
+    container_name: polyscraper-api
+    env_file: .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    networks:
+      - polyscraper
+    volumes:
+      - api-data:/data
+
+  ingester:
+    build: ./ingester
+    container_name: polyscraper-ingester
+    env_file: .env
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    networks:
+      - polyscraper
+    volumes:
+      - api-data:/data
+
+networks:
+  polyscraper:
+    driver: bridge
+volumes:
+  os-data:
+  api-data:
+

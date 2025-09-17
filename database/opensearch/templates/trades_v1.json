@@ -1,0 +1,22 @@
+{
+  "index_patterns": ["trades_v1-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": false,
+      "properties": {
+        "trade_id": {"type": "keyword"},
+        "market_id": {"type": "keyword"},
+        "ts": {"type": "date"},
+        "price": {"type": "float"},
+        "size": {"type": "float"},
+        "side": {"type": "keyword"}
+      }
+    }
+  },
+  "priority": 100
+}
+
