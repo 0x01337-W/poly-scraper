@@ -3,10 +3,15 @@ from fastapi import APIRouter, Depends, Query
 from opensearchpy import OpenSearch
 
 from src.deps.auth import require_api_key
+from src.deps.rate_limit import require_rate_limit
 from src.search.client import get_client
 
 
-router = APIRouter(prefix="/v1/trades", tags=["trades"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/v1/trades",
+    tags=["trades"],
+    dependencies=[Depends(require_api_key), Depends(require_rate_limit)],
+)
 
 
 @router.get("")
@@ -15,7 +20,7 @@ async def list_trades(
     _from: Optional[str] = Query(default=None, alias="from"),
     to: Optional[str] = Query(default=None),
     sort: str = Query(default="ts:desc"),
-    page: int = Query(default=1, ge=1),
+    cursor: str | None = Query(default=None, description="Opaque cursor from previous page"),
     limit: int = Query(default=100, ge=1, le=1000),
     client: OpenSearch = Depends(get_client),
 ) -> dict:
@@ -31,11 +36,27 @@ async def list_trades(
 
     body = {
         "query": {"bool": {"must": must}},
-        "from": (page - 1) * limit,
         "size": limit,
-        "sort": [{sort_field: {"order": order}}],
+        "sort": [{sort_field: {"order": order}}, {"_id": {"order": order}}],
     }
+    if cursor:
+        # Expect cursor as "sortFieldValue|_id"
+        try:
+            parts = cursor.split("|", 1)
+            sort_val = parts[0]
+            doc_id = parts[1]
+            # For date fields, pass the raw value; OpenSearch will parse
+            body["search_after"] = [sort_val, doc_id]
+        except Exception:
+            pass
     res = client.search(index="trades_v1-*", body=body)
-    hits = [h["_source"] | {"_id": h["_id"], "_index": h["_index"]} for h in res["hits"]["hits"]]
-    return {"data": hits, "page": page, "limit": limit}
+    hits_raw = res["hits"]["hits"]
+    hits = [h["_source"] | {"_id": h["_id"], "_index": h["_index"]} for h in hits_raw]
+    next_cursor = None
+    if hits_raw:
+        last = hits_raw[-1]
+        last_sort = last.get("sort", [])
+        if len(last_sort) >= 2:
+            next_cursor = f"{last_sort[0]}|{last['_id']}"
+    return {"data": hits, "limit": limit, "next_cursor": next_cursor}
 

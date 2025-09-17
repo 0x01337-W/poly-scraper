@@ -42,6 +42,10 @@ Session log notes will be appended under each phase during implementation.
   - Orderbook: ingestion pipeline missing (API in place).
   - API: add `GET /v1/markets/{market_id}`, cursor pagination for trades, rate limiting, Pydantic schemas/error envelope.
 - Updated `.env.example` to use `OPENSEARCH_URL=https://opensearch:9200` to match container TLS.
+- Implemented:
+  - `GET /v1/markets/{market_id}` endpoint.
+  - In-memory per-key rate limiting dependency applied to all protected routers.
+  - Cursor-based pagination for `/v1/trades` using `search_after` with opaque `next_cursor`.
 - Next up: complete trades ingestion, implement candles worker, add markets detail route, implement per-key rate limiting and cursor pagination, and add admin key CLI.
 
 ## 1) Goals, constraints, and non-goals

@@ -3,10 +3,15 @@ from fastapi import APIRouter, Depends, Query
 from opensearchpy import OpenSearch
 
 from src.deps.auth import require_api_key
+from src.deps.rate_limit import require_rate_limit
 from src.search.client import get_client
 
 
-router = APIRouter(prefix="/v1/orderbook", tags=["orderbook"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/v1/orderbook",
+    tags=["orderbook"],
+    dependencies=[Depends(require_api_key), Depends(require_rate_limit)],
+)
 
 
 @router.get("")

@@ -3,10 +3,15 @@ from fastapi import APIRouter, Depends, Query
 from opensearchpy import OpenSearch
 
 from src.deps.auth import require_api_key
+from src.deps.rate_limit import require_rate_limit
 from src.search.client import get_client
 
 
-router = APIRouter(prefix="/v1/markets", tags=["markets"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/v1/markets",
+    tags=["markets"],
+    dependencies=[Depends(require_api_key), Depends(require_rate_limit)],
+)
 
 
 @router.get("")
@@ -35,4 +40,23 @@ async def list_markets(
     res = client.search(index="markets_v1", body=body)
     hits = [h["_source"] | {"_id": h["_id"]} for h in res["hits"]["hits"]]
     return {"data": hits, "page": page, "limit": limit}
+
+
+@router.get("/{market_id}")
+async def get_market(
+    market_id: str,
+    client: OpenSearch = Depends(get_client),
+) -> dict:
+    try:
+        res = client.get(index="markets_v1", id=market_id)
+        src = res.get("_source", {})
+        return src | {"_id": market_id}
+    except Exception:
+        # fallback search by field if direct get misses due to differing ids
+        body = {"query": {"bool": {"must": [{"term": {"market_id": market_id}}]}}, "size": 1}
+        res = client.search(index="markets_v1", body=body)
+        if not res["hits"]["hits"]:
+            return {"error": {"code": "not_found", "message": "Market not found"}}
+        h = res["hits"]["hits"][0]
+        return h["_source"] | {"_id": h["_id"]}
 
