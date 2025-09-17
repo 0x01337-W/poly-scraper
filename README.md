@@ -1,7 +1,7 @@
 Polymarket Data SaaS (Self-hosted)
 
 Quickstart
-- Copy `.env.example` to `.env` and adjust as needed.
+- Copy `env.example` to `.env` and adjust as needed.
 - Start OpenSearch and services with Docker Compose:
   - `docker compose up -d`
 - Initialize OpenSearch templates and ILM:
