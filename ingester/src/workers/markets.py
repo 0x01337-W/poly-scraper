@@ -45,7 +45,7 @@ def to_es_doc(market: dict[str, Any]) -> dict[str, Any]:
     return market
 
 
-def bulk_upsert_markets(markets: list[dict[str, Any]]) -> None:
+def bulk_upsert_markets(markets: list[dict[str, Any]]) -> int:
     client = get_client()
     actions = []
     for m in markets:
@@ -63,6 +63,7 @@ def bulk_upsert_markets(markets: list[dict[str, Any]]) -> None:
         )
     if actions:
         helpers.bulk(client, actions, request_timeout=60)
+    return len(actions)
 
 
 async def run_markets_worker(poll_ms: int = 10000) -> None:
@@ -70,7 +71,8 @@ async def run_markets_worker(poll_ms: int = 10000) -> None:
     while True:
         try:
             markets = await fetch_markets()
-            bulk_upsert_markets(markets)
+            count = bulk_upsert_markets(markets)
+            print(f"[markets_worker] upserted={count}")
         except Exception as e:  # log minimal for now
             print(f"[markets_worker] error: {e}")
         await asyncio.sleep(poll_ms / 1000)

@@ -55,9 +55,9 @@ def to_es_doc(trade: dict[str, Any]) -> dict[str, Any]:
     return trade
 
 
-def bulk_upsert_trades(trades: list[dict[str, Any]]) -> None:
+def bulk_upsert_trades(trades: list[dict[str, Any]]) -> int:
     if not trades:
-        return
+        return 0
     client = get_client()
     actions = []
     for t in trades:
@@ -77,13 +77,15 @@ def bulk_upsert_trades(trades: list[dict[str, Any]]) -> None:
         actions.append(action)
     if actions:
         helpers.bulk(client, actions, request_timeout=60)
+    return len(actions)
 
 
 async def run_trades_worker(poll_ms: int = 3000) -> None:
     while True:
         try:
             trades = await fetch_trades()
-            bulk_upsert_trades(trades)
+            count = bulk_upsert_trades(trades)
+            print(f"[trades_worker] upserted={count}")
         except Exception as e:
             print(f"[trades_worker] error: {e}")
         await asyncio.sleep(poll_ms / 1000)
