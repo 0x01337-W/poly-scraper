@@ -18,6 +18,26 @@
       </nav>
       <article>
         <h1>Candles</h1>
+        <form method="get">
+          <div class="grid">
+            <label>Market ID
+              <input type="text" name="market_id" value="{{ market_id }}" />
+            </label>
+            <label>Interval
+              <input type="text" name="interval" value="{{ interval }}" placeholder="1m|5m|1h" />
+            </label>
+            <label>From
+              <input type="text" name="from_" value="{{ from_ }}" placeholder="ISO8601" />
+            </label>
+            <label>To
+              <input type="text" name="to" value="{{ to }}" placeholder="ISO8601" />
+            </label>
+            <label>Per page
+              <input type="number" name="limit" value="{{ limit }}" min="1" max="1000" />
+            </label>
+          </div>
+          <button type="submit">Apply</button>
+        </form>
         <table>
           <thead>
             <tr>
@@ -42,6 +62,25 @@
             {% endfor %}
           </tbody>
         </table>
+        <nav>
+          <ul>
+            <li>
+              {% if page > 1 %}
+              <a href="?market_id={{ market_id }}&interval={{ interval }}&from_={{ from_ }}&to={{ to }}&limit={{ limit }}&page={{ page - 1 }}">Prev</a>
+              {% else %}
+              <span>Prev</span>
+              {% endif %}
+            </li>
+            <li>Page {{ page }} of {{ ((total + limit - 1) // limit) if total else 1 }}</li>
+            <li>
+              {% if (page * limit) < total %}
+              <a href="?market_id={{ market_id }}&interval={{ interval }}&from_={{ from_ }}&to={{ to }}&limit={{ limit }}&page={{ page + 1 }}">Next</a>
+              {% else %}
+              <span>Next</span>
+              {% endif %}
+            </li>
+          </ul>
+        </nav>
       </article>
     </main>
   </body>

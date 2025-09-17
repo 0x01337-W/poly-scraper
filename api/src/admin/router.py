@@ -133,7 +133,14 @@ async def create_key(
 
 
 @router.get("/data/markets", response_class=HTMLResponse)
-async def data_markets(request: Request, q: Optional[str] = None, category: Optional[str] = None, status_: Optional[str] = None, page: int = 1, limit: int = 50) -> HTMLResponse:
+async def data_markets(
+    request: Request,
+    q: Optional[str] = None,
+    category: Optional[str] = None,
+    status_: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
+) -> HTMLResponse:
     require_admin(request)
     client: OpenSearch = get_client()
     must = []
@@ -148,14 +155,36 @@ async def data_markets(request: Request, q: Optional[str] = None, category: Opti
         "from": (page - 1) * limit,
         "size": limit,
         "sort": [{"created_at": {"order": "desc"}}],
+        "track_total_hits": True,
     }
     res = client.search(index="markets_v1", body=body)
     hits = [h["_source"] | {"_id": h["_id"]} for h in res["hits"]["hits"]]
-    return templates.TemplateResponse("data_markets.html", {"request": request, "rows": hits, "page": page, "limit": limit})
+    total = res.get("hits", {}).get("total", {}).get("value", 0)
+    return templates.TemplateResponse(
+        "data_markets.html",
+        {
+            "request": request,
+            "rows": hits,
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "q": q or "",
+            "category": category or "",
+            "status_": status_ or "",
+        },
+    )
 
 
 @router.get("/data/trades", response_class=HTMLResponse)
-async def data_trades(request: Request, market_id: str, from_: Optional[str] = None, to: Optional[str] = None, sort: str = "ts:desc", limit: int = 100) -> HTMLResponse:
+async def data_trades(
+    request: Request,
+    market_id: str,
+    from_: Optional[str] = None,
+    to: Optional[str] = None,
+    sort: str = "ts:desc",
+    page: int = 1,
+    limit: int = 100,
+) -> HTMLResponse:
     require_admin(request)
     client: OpenSearch = get_client()
     must = [{"term": {"market_id": market_id}}]
@@ -167,14 +196,42 @@ async def data_trades(request: Request, market_id: str, from_: Optional[str] = N
             rng["lte"] = to
         must.append({"range": {"ts": rng}})
     order = "desc" if sort.endswith(":desc") else "asc"
-    body = {"query": {"bool": {"must": must}}, "size": limit, "sort": [{"ts": {"order": order}}]}
+    body = {
+        "query": {"bool": {"must": must}},
+        "from": (page - 1) * limit,
+        "size": limit,
+        "sort": [{"ts": {"order": order}}],
+        "track_total_hits": True,
+    }
     res = client.search(index="trades_v1-*", body=body)
     hits = [h["_source"] | {"_id": h["_id"], "_index": h["_index"]} for h in res["hits"]["hits"]]
-    return templates.TemplateResponse("data_trades.html", {"request": request, "rows": hits, "limit": limit, "market_id": market_id})
+    total = res.get("hits", {}).get("total", {}).get("value", 0)
+    return templates.TemplateResponse(
+        "data_trades.html",
+        {
+            "request": request,
+            "rows": hits,
+            "limit": limit,
+            "market_id": market_id,
+            "from_": from_ or "",
+            "to": to or "",
+            "sort": sort,
+            "page": page,
+            "total": total,
+        },
+    )
 
 
 @router.get("/data/candles", response_class=HTMLResponse)
-async def data_candles(request: Request, market_id: str, interval: str, from_: str, to: str) -> HTMLResponse:
+async def data_candles(
+    request: Request,
+    market_id: str,
+    interval: str,
+    from_: str,
+    to: str,
+    page: int = 1,
+    limit: int = 200,
+) -> HTMLResponse:
     require_admin(request)
     client: OpenSearch = get_client()
     body = {
@@ -187,25 +244,62 @@ async def data_candles(request: Request, market_id: str, interval: str, from_: s
                 ]
             }
         },
-        "size": 1000,
+        "from": (page - 1) * limit,
+        "size": limit,
         "sort": [{"open_time": {"order": "asc"}}],
+        "track_total_hits": True,
     }
     res = client.search(index="candles_v1", body=body)
     hits = [h["_source"] | {"_id": h["_id"]} for h in res["hits"]["hits"]]
-    return templates.TemplateResponse("data_candles.html", {"request": request, "rows": hits})
+    total = res.get("hits", {}).get("total", {}).get("value", 0)
+    return templates.TemplateResponse(
+        "data_candles.html",
+        {
+            "request": request,
+            "rows": hits,
+            "market_id": market_id,
+            "interval": interval,
+            "from_": from_,
+            "to": to,
+            "page": page,
+            "limit": limit,
+            "total": total,
+        },
+    )
 
 
 @router.get("/data/orderbook", response_class=HTMLResponse)
-async def data_orderbook(request: Request, market_id: str, side: str = "bid", at: Optional[str] = None) -> HTMLResponse:
+async def data_orderbook(
+    request: Request,
+    market_id: str,
+    side: str = "bid",
+    at: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
+) -> HTMLResponse:
     require_admin(request)
     client: OpenSearch = get_client()
     must = [{"term": {"market_id": market_id}}, {"term": {"side": side}}]
     if at:
         must.append({"range": {"ts": {"lte": at}}})
-    body = {"query": {"bool": {"must": must}}, "size": 1, "sort": [{"ts": {"order": "desc"}}]}
+        body = {"query": {"bool": {"must": must}}, "size": 1, "sort": [{"ts": {"order": "desc"}}]}
+        res = client.search(index="orderbook_snapshots_v1", body=body)
+        doc = res["hits"]["hits"][0]["_source"] if res["hits"]["hits"] else {}
+        return templates.TemplateResponse("data_orderbook.html", {"request": request, "doc": doc, "rows": []})
+    body = {
+        "query": {"bool": {"must": must}},
+        "from": (page - 1) * limit,
+        "size": limit,
+        "sort": [{"ts": {"order": "desc"}}],
+        "track_total_hits": True,
+    }
     res = client.search(index="orderbook_snapshots_v1", body=body)
-    doc = res["hits"]["hits"][0]["_source"] if res["hits"]["hits"] else {}
-    return templates.TemplateResponse("data_orderbook.html", {"request": request, "doc": doc})
+    rows = [h["_source"] | {"_id": h["_id"]} for h in res["hits"]["hits"]]
+    total = res.get("hits", {}).get("total", {}).get("value", 0)
+    return templates.TemplateResponse(
+        "data_orderbook.html",
+        {"request": request, "rows": rows, "market_id": market_id, "side": side, "page": page, "limit": limit, "total": total},
+    )
 
 
 # ------------------ Ingestion Status ------------------

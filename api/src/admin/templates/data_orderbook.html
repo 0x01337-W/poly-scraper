@@ -17,7 +17,28 @@
         </ul>
       </nav>
       <article>
-        <h1>Orderbook Snapshot</h1>
+        <h1>Orderbook</h1>
+        <form method="get">
+          <div class="grid">
+            <label>Market ID
+              <input type="text" name="market_id" value="{{ market_id or '' }}" />
+            </label>
+            <label>Side
+              <select name="side">
+                <option value="bid" {% if side == 'bid' %}selected{% endif %}>bid</option>
+                <option value="ask" {% if side == 'ask' %}selected{% endif %}>ask</option>
+              </select>
+            </label>
+            <label>At (optional)
+              <input type="text" name="at" value="{{ at or '' }}" placeholder="ISO8601" />
+            </label>
+            <label>Per page
+              <input type="number" name="limit" value="{{ limit or 50 }}" min="1" max="1000" />
+            </label>
+          </div>
+          <button type="submit">Apply</button>
+        </form>
+        {% if doc %}
         {% if doc and doc.levels %}
         <h3>Bids/Asks</h3>
         <table>
@@ -38,8 +59,51 @@
             {% endfor %}
           </tbody>
         </table>
+        {% endif %}
         {% else %}
-        <p>No snapshot found.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>ts</th>
+              <th>side</th>
+              <th>levels (top)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+            <tr>
+              <td>{{ r.ts }}</td>
+              <td>{{ r.side }}</td>
+              <td>
+                {% if r.levels and r.levels|length %}
+                  L1: price={{ r.levels[0].price }}, size={{ r.levels[0].size }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <nav>
+          <ul>
+            <li>
+              {% if page > 1 %}
+              <a href="?market_id={{ market_id }}&side={{ side }}&limit={{ limit }}&page={{ page - 1 }}">Prev</a>
+              {% else %}
+              <span>Prev</span>
+              {% endif %}
+            </li>
+            <li>Page {{ page }} of {{ ((total + limit - 1) // limit) if total else 1 }}</li>
+            <li>
+              {% if (page * limit) < total %}
+              <a href="?market_id={{ market_id }}&side={{ side }}&limit={{ limit }}&page={{ page + 1 }}">Next</a>
+              {% else %}
+              <span>Next</span>
+              {% endif %}
+            </li>
+          </ul>
+        </nav>
         {% endif %}
       </article>
     </main>

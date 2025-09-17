@@ -18,6 +18,27 @@
       </nav>
       <article>
         <h1>Trades ({{ market_id }})</h1>
+        <form method="get">
+          <input type="hidden" name="market_id" value="{{ market_id }}" />
+          <div class="grid">
+            <label>From
+              <input type="text" name="from_" value="{{ from_ }}" placeholder="ISO8601" />
+            </label>
+            <label>To
+              <input type="text" name="to" value="{{ to }}" placeholder="ISO8601" />
+            </label>
+            <label>Sort
+              <select name="sort">
+                <option value="ts:desc" {% if sort == 'ts:desc' %}selected{% endif %}>Newest first</option>
+                <option value="ts:asc" {% if sort == 'ts:asc' %}selected{% endif %}>Oldest first</option>
+              </select>
+            </label>
+            <label>Per page
+              <input type="number" name="limit" value="{{ limit }}" min="1" max="1000" />
+            </label>
+          </div>
+          <button type="submit">Apply</button>
+        </form>
         <table>
           <thead>
             <tr>
@@ -40,6 +61,25 @@
             {% endfor %}
           </tbody>
         </table>
+        <nav>
+          <ul>
+            <li>
+              {% if page > 1 %}
+              <a href="?market_id={{ market_id }}&from_={{ from_ }}&to={{ to }}&sort={{ sort }}&limit={{ limit }}&page={{ page - 1 }}">Prev</a>
+              {% else %}
+              <span>Prev</span>
+              {% endif %}
+            </li>
+            <li>Page {{ page }} of {{ ((total + limit - 1) // limit) if total else 1 }}</li>
+            <li>
+              {% if (page * limit) < total %}
+              <a href="?market_id={{ market_id }}&from_={{ from_ }}&to={{ to }}&sort={{ sort }}&limit={{ limit }}&page={{ page + 1 }}">Next</a>
+              {% else %}
+              <span>Next</span>
+              {% endif %}
+            </li>
+          </ul>
+        </nav>
       </article>
     </main>
   </body>
