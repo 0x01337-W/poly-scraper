@@ -44,7 +44,7 @@ class ApiKeyStore:
 
     def _init_db(self) -> None:
         with self._get_conn() as conn:
-            conn.execute(SCHEMA_SQL)
+            conn.executescript(SCHEMA_SQL)
             conn.commit()
 
     def upsert_key(self, key: str, plan_type: str = "monthly", status: str = "active", expires_at: Optional[str] = None) -> None:
