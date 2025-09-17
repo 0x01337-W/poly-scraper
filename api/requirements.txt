@@ -3,4 +3,7 @@ uvicorn[standard]==0.30.6
 opensearch-py==2.6.0
 pydantic==2.9.2
 python-dotenv==1.0.1
+Jinja2==3.1.4
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
 

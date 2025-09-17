@@ -10,6 +10,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY src/ /app/src/
 
+# Ensure templates are present in image
+ENV ADMIN_TEMPLATES_DIR=/app/src/admin/templates
+
 ENV API_BIND_HOST=0.0.0.0
 ENV API_BIND_PORT=8080
 

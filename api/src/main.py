@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI
+from starlette.middleware.sessions import SessionMiddleware
 
 from src.routers.health import router as health_router
 from src.routers.markets import router as markets_router
@@ -18,6 +19,19 @@ def create_app() -> FastAPI:
     application.include_router(trades_router)
     application.include_router(candles_router)
     application.include_router(orderbook_router)
+
+    # Optional Admin Dashboard
+    if os.getenv("ADMIN_ENABLED", "false").lower() == "true":
+        secret = os.getenv("ADMIN_SESSION_SECRET", "")
+        if secret:
+            application.add_middleware(SessionMiddleware, secret_key=secret)
+        try:
+            from src.admin.router import router as admin_router  # type: ignore
+
+            application.include_router(admin_router)
+        except Exception:
+            # If admin router import fails, continue without admin
+            pass
 
     @application.on_event("startup")
     def _startup() -> None:
