@@ -45,14 +45,21 @@ async def fetch_markets_page(
         params["page"] = page
     if offset is not None:
         params["offset"] = offset
-    async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.get(url, params=params)
+    headers = {"User-Agent": "PolyScraper/0.1", "Accept": "application/json"}
+    print(f"[markets_worker] GET {url} params={params}")
+    async with httpx.AsyncClient(timeout=30, headers=headers) as client:
+        try:
+            r = await client.get(url, params=params)
+        except Exception as e:
+            print(f"[markets_worker] request error: {e} url={url} params={params}")
+            raise
         try:
             r.raise_for_status()
         except Exception as e:
             print(f"[markets_worker] fetch error: {e} url={url} status={r.status_code} body={r.text[:500]}")
             raise
         payload = r.json()
+        print(f"[markets_worker] response status={r.status_code} len={len(r.text)}")
         data: list[dict[str, Any]] = []
         next_cursor: Optional[str] = None
         next_page: Optional[int] = None
@@ -91,6 +98,7 @@ async def fetch_all_markets(page_size: int = MARKETS_PAGE_SIZE) -> list[dict[str
         data, next_cursor, next_page = await fetch_markets_page(
             limit=page_size, cursor=cursor, page=page, offset=offset
         )
+        print(f"[markets_worker] page#{safety_pages} got={len(data)} cursor={bool(next_cursor)} next_page={next_page} offset={offset}")
         if not data:
             break
         results.extend(data)
@@ -110,6 +118,7 @@ async def fetch_all_markets(page_size: int = MARKETS_PAGE_SIZE) -> list[dict[str
             offset = (offset or 0) + page_size
             cursor = None
             page = None
+    print(f"[markets_worker] done pagination total={len(results)}")
     return results
 
 
@@ -203,8 +212,18 @@ def bulk_upsert_markets(markets: list[dict[str, Any]]) -> int:
         )
     if not actions:
         return 0
-    success, _ = helpers.bulk(client, actions, request_timeout=60, raise_on_error=False)
-    return int(success)
+    try:
+        success, errors = helpers.bulk(client, actions, request_timeout=60, raise_on_error=False)
+        if errors:
+            try:
+                # print first few errors for visibility
+                print(f"[markets_worker] bulk errors count={len(errors)} sample={str(errors)[:400]}")
+            except Exception:
+                pass
+        return int(success)
+    except Exception as e:
+        print(f"[markets_worker] bulk exception: {e}")
+        return 0
 
 
 async def run_markets_worker(poll_ms: int = 10000) -> None:
