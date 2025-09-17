@@ -33,6 +33,17 @@ Session log notes will be appended under each phase during implementation.
   - Decision on enabling WebSocket MARKET for book deltas (post-MVP).
   - Define acceptance checks for data completeness for initial markets set.
 
+### Session log (2025-09-17)
+- Created documentation suite under `docs/`: `ARCHITECTURE.md`, `API.md`, `INGESTION.md`, `DB.md`, `OPERATIONS.md`, `SECURITY.md`, `TESTING.md`, `OPTIMIZATION.md`, `ROADMAP.md`.
+- Updated `README.md` to reference docs and provide clearer quickstart (DB-only bring-up, setup script, full stack).
+- Reviewed API and ingester implementations; confirmed routes exist for markets/trades/candles/orderbook and markets/trades workers are live. Noted gaps:
+  - Trades: pagination/backfill, idempotent upserts, checkpoints.
+  - Candles: derivation worker missing.
+  - Orderbook: ingestion pipeline missing (API in place).
+  - API: add `GET /v1/markets/{market_id}`, cursor pagination for trades, rate limiting, Pydantic schemas/error envelope.
+- Updated `.env.example` to use `OPENSEARCH_URL=https://opensearch:9200` to match container TLS.
+- Next up: complete trades ingestion, implement candles worker, add markets detail route, implement per-key rate limiting and cursor pagination, and add admin key CLI.
+
 ## 1) Goals, constraints, and non-goals
 
 ### Goals
