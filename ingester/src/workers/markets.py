@@ -1,6 +1,7 @@
 import asyncio
 import os
-from typing import Any
+from typing import Any, Optional, Tuple
+from datetime import datetime, timezone
 
 import httpx
 from opensearchpy import OpenSearch, helpers
@@ -8,6 +9,7 @@ import hashlib
 
 
 POLYMARKET_GAMMA_BASE = os.getenv("POLYMARKET_GAMMA_BASE", "https://gamma-api.polymarket.com")
+MARKETS_PAGE_SIZE = int(os.getenv("MARKETS_PAGE_SIZE", "250"))
 
 
 def get_client() -> OpenSearch:
@@ -27,23 +29,149 @@ def get_client() -> OpenSearch:
     return client
 
 
-async def fetch_markets() -> list[dict[str, Any]]:
+async def fetch_markets_page(
+    limit: Optional[int] = None,
+    cursor: Optional[str] = None,
+    page: Optional[int] = None,
+    offset: Optional[int] = None,
+) -> Tuple[list[dict[str, Any]], Optional[str], Optional[int]]:
     url = f"{POLYMARKET_GAMMA_BASE}/markets"
+    params: dict[str, Any] = {}
+    if limit is not None:
+        params["limit"] = limit
+    if cursor:
+        params["cursor"] = cursor
+    if page is not None:
+        params["page"] = page
+    if offset is not None:
+        params["offset"] = offset
     async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.get(url)
+        r = await client.get(url, params=params)
         r.raise_for_status()
-        data = r.json()
-        # Normalize to list of dicts
-        if isinstance(data, dict) and "data" in data:
-            return data["data"]
-        if isinstance(data, list):
-            return data
-        return []
+        payload = r.json()
+        data: list[dict[str, Any]] = []
+        next_cursor: Optional[str] = None
+        next_page: Optional[int] = None
+        if isinstance(payload, dict):
+            if "data" in payload and isinstance(payload["data"], list):
+                data = payload["data"]
+            elif isinstance(payload, list):
+                data = payload  # type: ignore
+            # cursor-based pagination keys vary; try common ones
+            for key in ("next_cursor", "cursor", "next"):
+                val = payload.get(key)
+                if isinstance(val, str) and val:
+                    next_cursor = val
+                    break
+            # increment page if present
+            if "page" in payload and isinstance(payload.get("page"), int):
+                try:
+                    next_page = int(payload["page"]) + 1
+                except Exception:
+                    next_page = None
+        elif isinstance(payload, list):
+            data = payload
+        return data, next_cursor, next_page
+
+
+async def fetch_all_markets(page_size: int = MARKETS_PAGE_SIZE) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    cursor: Optional[str] = None
+    page: Optional[int] = None
+    offset: Optional[int] = 0
+    safety_pages = 0
+    while True:
+        safety_pages += 1
+        if safety_pages > 10000:
+            break
+        data, next_cursor, next_page = await fetch_markets_page(
+            limit=page_size, cursor=cursor, page=page, offset=offset
+        )
+        if not data:
+            break
+        results.extend(data)
+        # advance pagination: prefer cursor, then page, then offset heuristic
+        if next_cursor:
+            cursor = next_cursor
+            page = None
+            offset = None
+        elif next_page is not None:
+            page = next_page
+            cursor = None
+            offset = None
+        else:
+            # heuristic: if page returned exactly page_size, assume more via offset
+            if len(data) < page_size:
+                break
+            offset = (offset or 0) + page_size
+            cursor = None
+            page = None
+    return results
+
+
+def _to_iso(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    # numeric epoch seconds or milliseconds
+    if isinstance(value, (int, float)):
+        try:
+            ts = float(value)
+            # heuristic: if larger than ~10^12, treat as ms
+            if ts > 1_000_000_000_000:
+                dt = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+            else:
+                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+            return dt.isoformat()
+        except Exception:
+            return None
+    # string ISO or parseable
+    if isinstance(value, str):
+        v = value.strip()
+        try:
+            # handle trailing Z
+            if v.endswith("Z"):
+                v = v.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(v)
+            return dt.astimezone(timezone.utc).isoformat()
+        except Exception:
+            # last resort: try int string
+            try:
+                return _to_iso(int(value))
+            except Exception:
+                return None
+    return None
 
 
 def to_es_doc(market: dict[str, Any]) -> dict[str, Any]:
-    # Keep as-is initially; enrich later based on real payloads
-    return market
+    # Normalize fields commonly used by the API index and queries
+    doc: dict[str, Any] = dict(market)
+    # Ensure stable ids are present in the document
+    if "market_id" not in doc and "id" in doc:
+        doc["market_id"] = doc.get("id")
+    # Normalize created_at from possible source fields
+    created_sources = [
+        "created_at",
+        "createdAt",
+        "created_time",
+        "creation_time",
+        "creationTime",
+        "created",
+        "openDate",
+        "openTime",
+        "start_date",
+        "startDate",
+        "start_time",
+        "startTime",
+    ]
+    created_at: Optional[str] = None
+    for key in created_sources:
+        if key in doc and doc.get(key) is not None:
+            created_at = _to_iso(doc.get(key))
+            if created_at:
+                break
+    if created_at:
+        doc["created_at"] = created_at
+    return doc
 
 
 def generate_market_id(market: dict[str, Any]) -> str:
@@ -63,7 +191,7 @@ def bulk_upsert_markets(markets: list[dict[str, Any]]) -> int:
         doc = to_es_doc(m)
         actions.append(
             {
-                "_op_type": "create",
+                "_op_type": "index",
                 "_index": "markets_v1",
                 "_id": market_id,
                 "_source": doc,
@@ -76,12 +204,12 @@ def bulk_upsert_markets(markets: list[dict[str, Any]]) -> int:
 
 
 async def run_markets_worker(poll_ms: int = 10000) -> None:
-    # Simple loop: fetch and upsert periodically
+    # Periodically fetch all markets with pagination and upsert
     while True:
         try:
-            markets = await fetch_markets()
+            markets = await fetch_all_markets(page_size=MARKETS_PAGE_SIZE)
             count = bulk_upsert_markets(markets)
-            print(f"[markets_worker] upserted={count}")
+            print(f"[markets_worker] fetched={len(markets)} upserted={count}")
         except Exception as e:  # log minimal for now
             print(f"[markets_worker] error: {e}")
         await asyncio.sleep(poll_ms / 1000)

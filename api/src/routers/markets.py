@@ -35,7 +35,14 @@ async def list_markets(
         "query": {"bool": {"must": must}} if must else {"match_all": {}},
         "from": (page - 1) * limit,
         "size": limit,
-        "sort": [{"created_at": {"order": "desc"}}],
+        "sort": [
+            {
+                "created_at": {
+                    "order": "desc",
+                    "unmapped_type": "date",
+                }
+            }
+        ],
     }
     res = client.search(index="markets_v1", body=body)
     hits = [h["_source"] | {"_id": h["_id"]} for h in res["hits"]["hits"]]
