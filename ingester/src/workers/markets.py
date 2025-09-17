@@ -4,6 +4,7 @@ from typing import Any
 
 import httpx
 from opensearchpy import OpenSearch, helpers
+import hashlib
 
 
 POLYMARKET_GAMMA_BASE = os.getenv("POLYMARKET_GAMMA_BASE", "https://gamma-api.polymarket.com")
@@ -45,25 +46,33 @@ def to_es_doc(market: dict[str, Any]) -> dict[str, Any]:
     return market
 
 
+def generate_market_id(market: dict[str, Any]) -> str:
+    mid = str(market.get("id") or market.get("market_id") or "")
+    if mid:
+        return mid
+    # Fallback: stable hash from title + createdAt if needed
+    key = "|".join([str(market.get("title") or ""), str(market.get("created_at") or market.get("createdAt") or "")])
+    return hashlib.sha1(key.encode("utf-8")).hexdigest()
+
+
 def bulk_upsert_markets(markets: list[dict[str, Any]]) -> int:
     client = get_client()
     actions = []
     for m in markets:
-        market_id = str(m.get("id") or m.get("market_id") or "")
-        if not market_id:
-            continue
+        market_id = generate_market_id(m)
         doc = to_es_doc(m)
         actions.append(
             {
-                "_op_type": "index",
+                "_op_type": "create",
                 "_index": "markets_v1",
                 "_id": market_id,
                 "_source": doc,
             }
         )
-    if actions:
-        helpers.bulk(client, actions, request_timeout=60)
-    return len(actions)
+    if not actions:
+        return 0
+    success, _ = helpers.bulk(client, actions, request_timeout=60, raise_on_error=False)
+    return int(success)
 
 
 async def run_markets_worker(poll_ms: int = 10000) -> None:

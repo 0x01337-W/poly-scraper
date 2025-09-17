@@ -1,5 +1,6 @@
 import asyncio
 import os
+import hashlib
 from datetime import datetime, timezone
 from typing import Any
 
@@ -52,7 +53,52 @@ def index_for_timestamp(ts: str) -> str:
 
 
 def to_es_doc(trade: dict[str, Any]) -> dict[str, Any]:
-    return trade
+    # Normalize fields for consistent querying
+    doc = dict(trade)
+    ts_val = trade.get("ts") or trade.get("timestamp")
+    if isinstance(ts_val, (int, float)):
+        dt = datetime.fromtimestamp(int(ts_val), tz=timezone.utc)
+        doc["ts"] = dt.isoformat()
+    elif isinstance(ts_val, str):
+        # assume ISO8601
+        try:
+            dt = datetime.fromisoformat(ts_val.replace("Z", "+00:00")).astimezone(timezone.utc)
+            doc["ts"] = dt.isoformat()
+        except Exception:
+            doc["ts"] = datetime.now(timezone.utc).isoformat()
+    else:
+        doc["ts"] = datetime.now(timezone.utc).isoformat()
+
+    # Map conditionId to market_id for consistency
+    if "conditionId" in trade and "market_id" not in trade:
+        doc["market_id"] = trade.get("conditionId")
+
+    # Normalize side
+    if "side" in trade and isinstance(trade["side"], str):
+        doc["side"] = trade["side"].lower()
+
+    return doc
+
+
+def generate_trade_id(trade: dict[str, Any]) -> str:
+    # Prefer transaction hash + asset + timestamp for uniqueness
+    tx = str(trade.get("transactionHash") or trade.get("txHash") or "")
+    asset = str(trade.get("asset") or "")
+    ts = str(trade.get("timestamp") or trade.get("ts") or "")
+    if tx and asset and ts:
+        return f"{tx}:{asset}:{ts}"
+    # Fallback to hash of key fields
+    key = "|".join(
+        [
+            str(trade.get("conditionId") or trade.get("market_id") or ""),
+            asset,
+            str(trade.get("side") or ""),
+            str(trade.get("price") or ""),
+            str(trade.get("size") or ""),
+            ts,
+        ]
+    )
+    return hashlib.sha1(key.encode("utf-8")).hexdigest()
 
 
 def bulk_upsert_trades(trades: list[dict[str, Any]]) -> int:
@@ -61,23 +107,23 @@ def bulk_upsert_trades(trades: list[dict[str, Any]]) -> int:
     client = get_client()
     actions = []
     for t in trades:
-        trade_id = str(t.get("id") or t.get("trade_id") or "")
+        trade_id = generate_trade_id(t)
         ts = str(t.get("ts") or t.get("timestamp") or "")
         if not ts:
             ts = datetime.now(timezone.utc).isoformat()
         index = index_for_timestamp(ts)
         doc = to_es_doc(t)
         action = {
-            "_op_type": "index",
+            "_op_type": "create",
             "_index": index,
             "_source": doc,
         }
-        if trade_id:
-            action["_id"] = trade_id
+        action["_id"] = trade_id
         actions.append(action)
-    if actions:
-        helpers.bulk(client, actions, request_timeout=60)
-    return len(actions)
+    if not actions:
+        return 0
+    success, _ = helpers.bulk(client, actions, request_timeout=60, raise_on_error=False)
+    return int(success)
 
 
 async def run_trades_worker(poll_ms: int = 3000) -> None:
@@ -85,7 +131,7 @@ async def run_trades_worker(poll_ms: int = 3000) -> None:
         try:
             trades = await fetch_trades()
             count = bulk_upsert_trades(trades)
-            print(f"[trades_worker] upserted={count}")
+            print(f"[trades_worker] created={count}")
         except Exception as e:
             print(f"[trades_worker] error: {e}")
         await asyncio.sleep(poll_ms / 1000)
