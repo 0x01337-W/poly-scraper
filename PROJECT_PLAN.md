@@ -313,7 +313,7 @@ Note: exact field names will be finalized from live payloads.
 
 ## 12) Quickstart (developer workflow)
 
-1) Copy `env.example` to `.env` and adjust settings.
+1) Copy `env.example` to `.env` and adjust settings. Set `OPENSEARCH_INITIAL_ADMIN_PASSWORD` to a strong value.
 2) Start OpenSearch services:
    - `docker compose -f database/opensearch/docker-compose.yml up -d`
 3) Run setup scripts to create templates/ILM.
