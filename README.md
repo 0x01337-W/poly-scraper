@@ -5,8 +5,10 @@ Quickstart
   - Set a strong `OPENSEARCH_INITIAL_ADMIN_PASSWORD` (required by OpenSearch 2.12+).
 - Start OpenSearch and services with Docker Compose:
   - `docker compose up -d`
-- Initialize OpenSearch templates and ILM:
-  - `bash database/opensearch/scripts/setup.sh`
+ - Initialize OpenSearch templates and ILM:
+   - `bash database/opensearch/scripts/setup.sh`
+ - (Optional) Enable trades ingester:
+   - Set `ENABLE_TRADES_INGESTER=true` in `.env`
 - Generate an API key (placeholder CLI to be added) and call API endpoints with header `X-API-Key`.
 
 Components

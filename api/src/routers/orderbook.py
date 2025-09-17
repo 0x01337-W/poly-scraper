@@ -1,0 +1,44 @@
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
+from opensearchpy import OpenSearch
+
+from src.deps.auth import require_api_key
+from src.search.client import get_client
+
+
+router = APIRouter(prefix="/v1/orderbook", tags=["orderbook"], dependencies=[Depends(require_api_key)])
+
+
+@router.get("")
+async def get_orderbook(
+    market_id: str = Query(...),
+    side: str = Query("bid", pattern="^(bid|ask)$"),
+    at: Optional[str] = Query(default=None),
+    client: OpenSearch = Depends(get_client),
+) -> dict:
+    if at:
+        body = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {"term": {"market_id": market_id}},
+                        {"term": {"side": side}},
+                        {"range": {"ts": {"lte": at}}}
+                    ]
+                }
+            },
+            "size": 1,
+            "sort": [{"ts": {"order": "desc"}}]
+        }
+    else:
+        body = {
+            "query": {"bool": {"must": [{"term": {"market_id": market_id}}, {"term": {"side": side}}]}},
+            "size": 1,
+            "sort": [{"ts": {"order": "desc"}}]
+        }
+    res = client.search(index="orderbook_snapshots_v1", body=body)
+    if not res["hits"]["hits"]:
+        return {"market_id": market_id, "side": side, "levels": []}
+    doc = res["hits"]["hits"][0]["_source"]
+    return doc
+

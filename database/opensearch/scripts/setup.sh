@@ -12,5 +12,9 @@ curl -sS -X PUT "$OS_URL/_index_template/orderbook_snapshots_v1" -H 'Content-Typ
 echo "Creating ILM policy 90d_delete..."
 curl -sS -X PUT "$OS_URL/_plugins/_ism/policies/90d_delete" -H 'Content-Type: application/json' --data-binary @"$(dirname "$0")/../ilm/90d_delete.json" | jq '.policy.policy_id' || true
 
+echo "Creating initial indices if missing..."
+curl -sS -X PUT "$OS_URL/markets_v1" -H 'Content-Type: application/json' -d '{"settings": {}}' | jq -r '.acknowledged' || true
+curl -sS -X PUT "$OS_URL/candles_v1" -H 'Content-Type: application/json' -d '{"settings": {}}' | jq -r '.acknowledged' || true
+
 echo "Setup complete."
 
