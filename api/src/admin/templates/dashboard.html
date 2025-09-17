@@ -14,6 +14,13 @@
         </ul>
         <ul>
           <li><a href="/admin">Dashboard</a></li>
+          <li><a href="/admin/keys">Keys</a></li>
+          <li><a href="/admin/data/markets">Markets</a></li>
+          <li><a href="/admin/data/trades?market_id=">Trades</a></li>
+          <li><a href="/admin/data/candles?market_id=&interval=1m&from_=&to=">Candles</a></li>
+          <li><a href="/admin/data/orderbook?market_id=&side=bid">Orderbook</a></li>
+          <li><a href="/admin/ingestion">Ingestion</a></li>
+          <li><a href="/admin/metrics">Metrics</a></li>
           <li>
             <form method="post" action="/admin/logout">
               <button type="submit" class="secondary">Logout</button>
@@ -23,6 +30,15 @@
       </nav>
       <article>
         <h1>Dashboard</h1>
+        <div class="grid">
+          <a href="/admin/keys"><article><h3>API Keys</h3><p>Manage API access</p></article></a>
+          <a href="/admin/data/markets"><article><h3>Markets</h3><p>Browse market metadata</p></article></a>
+          <a href="/admin/data/trades?market_id="><article><h3>Trades</h3><p>Inspect trade events</p></article></a>
+          <a href="/admin/data/candles?market_id=&interval=1m&from_=&to="><article><h3>Candles</h3><p>Derived OHLCV</p></article></a>
+          <a href="/admin/data/orderbook?market_id=&side=bid"><article><h3>Orderbook</h3><p>Depth snapshots</p></article></a>
+          <a href="/admin/ingestion"><article><h3>Ingestion</h3><p>Worker checkpoints</p></article></a>
+          <a href="/admin/metrics"><article><h3>Metrics</h3><p>Requests last 24h</p></article></a>
+        </div>
         <h3>OpenSearch</h3>
         <ul>
           <li>Status: {{ health.status if health else 'unknown' }}</li>

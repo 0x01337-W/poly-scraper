@@ -14,6 +14,13 @@
         </ul>
         <ul>
           <li><a href="/admin">Dashboard</a></li>
+          <li><a href="/admin/keys">Keys</a></li>
+          <li><a href="/admin/data/markets">Markets</a></li>
+          <li><a href="/admin/data/trades?market_id=">Trades</a></li>
+          <li><a href="/admin/data/candles?market_id=&interval=1m&from_=&to=">Candles</a></li>
+          <li><a href="/admin/data/orderbook?market_id=&side=bid">Orderbook</a></li>
+          <li><a href="/admin/ingestion">Ingestion</a></li>
+          <li><a href="/admin/metrics">Metrics</a></li>
         </ul>
       </nav>
       <article>
@@ -49,7 +56,16 @@
             {% for r in rows %}
             <tr>
               <td><code>{{ r.market_id }}</code></td>
-              <td>{{ r.title }}</td>
+              <td>
+                {{ r.title }}
+                <small>
+                  [
+                  <a href="/admin/data/trades?market_id={{ r.market_id }}">trades</a>
+                  | <a href="/admin/data/candles?market_id={{ r.market_id }}&interval=1m&from_=&to=">candles</a>
+                  | <a href="/admin/data/orderbook?market_id={{ r.market_id }}&side=bid">orderbook</a>
+                  ]
+                </small>
+              </td>
               <td>{{ r.category }}</td>
               <td>{{ r.status }}</td>
               <td>{{ r.created_at }}</td>
