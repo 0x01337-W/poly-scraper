@@ -20,5 +20,6 @@ ENV LOG_LEVEL=info
 
 EXPOSE 8080
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080", "--log-level", "${LOG_LEVEL}"]
+# Use shell form so ${LOG_LEVEL} is expanded at runtime
+CMD sh -c "uvicorn src.main:app --host 0.0.0.0 --port 8080 --log-level \"${LOG_LEVEL}\""
 
