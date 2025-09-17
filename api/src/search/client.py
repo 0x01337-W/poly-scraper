@@ -5,7 +5,7 @@ from opensearchpy import OpenSearch
 
 @lru_cache(maxsize=1)
 def get_client() -> OpenSearch:
-    url = os.getenv("OPENSEARCH_URL", "http://localhost:9200")
+    url = os.getenv("OPENSEARCH_URL", "https://localhost:9200")
     user = os.getenv("OPENSEARCH_USER", "")
     password = os.getenv("OPENSEARCH_PASSWORD", "")
     auth = (user, password) if user and password else None
