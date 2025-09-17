@@ -47,7 +47,11 @@ async def fetch_markets_page(
         params["offset"] = offset
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.get(url, params=params)
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except Exception as e:
+            print(f"[markets_worker] fetch error: {e} url={url} status={r.status_code} body={r.text[:500]}")
+            raise
         payload = r.json()
         data: list[dict[str, Any]] = []
         next_cursor: Optional[str] = None
@@ -204,6 +208,7 @@ def bulk_upsert_markets(markets: list[dict[str, Any]]) -> int:
 
 
 async def run_markets_worker(poll_ms: int = 10000) -> None:
+    print(f"[markets_worker] starting with poll_ms={poll_ms} base={POLYMARKET_GAMMA_BASE} page_size={MARKETS_PAGE_SIZE}")
     # Periodically fetch all markets with pagination and upsert
     while True:
         try:
