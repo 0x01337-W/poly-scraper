@@ -49,6 +49,11 @@ Session log notes will be appended under each phase during implementation.
 - Trades ingestion:
   - Added backfill with pagination and time windows, idempotent upserts, and checkpointing.
   - New env: `TRADES_PAGE_SIZE`, `TRADES_BACKFILL_DAYS`, `TRADES_BACKFILL_WINDOW_MINUTES`, `TRADES_CHECKPOINT_PATH`.
+- Candles:
+  - Implemented candles worker computing OHLCV for `1m,5m,1h` with per-interval checkpoints and idempotent upserts to `candles_v1`.
+  - New env: `ENABLE_CANDLES_WORKER`, `CANDLES_INTERVALS`, `CANDLES_LOOKBACK_MINUTES`, `CANDLES_TRADES_FETCH_LIMIT`, `CANDLES_POLL_MS`, `CANDLES_CHECKPOINT_DIR`.
+- Admin CLI:
+  - Added `api/src/auth/cli.py` with commands: `upsert`, `list`, `revoke`.
 - Next up: complete trades ingestion, implement candles worker, add markets detail route, implement per-key rate limiting and cursor pagination, and add admin key CLI.
 
 ## 1) Goals, constraints, and non-goals

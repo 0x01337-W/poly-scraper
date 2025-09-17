@@ -22,9 +22,10 @@
 - Deduplication via deterministic IDs and idempotent upserts.
 
 ### Candles derivation (planned)
+### Candles derivation
 - Compute OHLCV for `1m,5m,1h` timeboxes aligned to boundaries.
-- Key: `{market_id, interval, open_time}`; write to `candles_v1`.
-- Either streaming aggregation during ingestion or periodic OpenSearch aggregation job.
+- Key: `{market_id, interval, open_time}`; write to `candles_v1` via idempotent upserts.
+- Worker scans trades within each interval, computes OHLCV, and advances a checkpoint per interval.
 
 ### Orderbook snapshots (planned)
 - Periodic top-N depth snapshots by side; key `(market_id, ts, side)`.
@@ -35,6 +36,7 @@
 - Feature flags: `ENABLE_TRADES_INGESTER`.
 - OpenSearch connection: `OPENSEARCH_URL`, credentials.
 - Trades backfill: `TRADES_PAGE_SIZE`, `TRADES_BACKFILL_DAYS`, `TRADES_BACKFILL_WINDOW_MINUTES`, `TRADES_CHECKPOINT_PATH`.
+- Candles: `ENABLE_CANDLES_WORKER`, `CANDLES_INTERVALS`, `CANDLES_LOOKBACK_MINUTES`, `CANDLES_TRADES_FETCH_LIMIT`, `CANDLES_POLL_MS`, `CANDLES_CHECKPOINT_DIR`.
 
 ### Operational notes
 - OpenSearch in this stack is HTTPS; set `OPENSEARCH_URL=https://opensearch:9200` inside Docker.

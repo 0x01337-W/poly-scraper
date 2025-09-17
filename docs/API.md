@@ -41,11 +41,11 @@ GET `/v1/trades`
   - `from` (timestamp; optional)
   - `to` (timestamp; optional)
   - `sort` (string; default `ts:desc`)
-  - `page` (int; default 1)
+  - `cursor` (opaque; optional)
   - `limit` (int; default 100, max 1000)
 Response:
 ```
-{ "data": [ { ...trade fields..., "_id": "...", "_index": "trades_v1-YYYY.MM.DD" } ], "page": 1, "limit": 100 }
+{ "data": [ { ...trade fields..., "_id": "...", "_index": "trades_v1-YYYY.MM.DD" } ], "limit": 100, "next_cursor": "opaque" }
 ```
 
 Example:
