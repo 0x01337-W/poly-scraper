@@ -14,13 +14,17 @@ router = APIRouter(
 )
 
 
-@router.get("")
+@router.get(
+    "",
+    summary="List markets",
+    description="Search and filter markets by free text, category, and status. Supports pagination and sort by created_at desc.",
+)
 async def list_markets(
-    q: Optional[str] = Query(default=None),
-    category: Optional[str] = Query(default=None),
-    status: Optional[str] = Query(default=None),
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=100, ge=1, le=1000),
+    q: Optional[str] = Query(default=None, description="Free-text query across title, category, description"),
+    category: Optional[str] = Query(default=None, description="Filter by category (keyword)"),
+    status: Optional[str] = Query(default=None, description="Filter by status (e.g., open/closed)"),
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
+    limit: int = Query(default=100, ge=1, le=1000, description="Page size (max 1000)"),
     client: OpenSearch = Depends(get_client),
 ) -> dict:
     must = []
@@ -49,7 +53,11 @@ async def list_markets(
     return {"data": hits, "page": page, "limit": limit}
 
 
-@router.get("/{market_id}")
+@router.get(
+    "/{market_id}",
+    summary="Get a market by ID",
+    description="Fetch a single market document by its ID; falls back to term lookup on the market_id field.",
+)
 async def get_market(
     market_id: str,
     client: OpenSearch = Depends(get_client),

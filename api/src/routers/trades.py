@@ -14,14 +14,18 @@ router = APIRouter(
 )
 
 
-@router.get("")
+@router.get(
+    "",
+    summary="List trades",
+    description="List trades for a market within an optional time window. Supports sort and cursor-based pagination.",
+)
 async def list_trades(
-    market_id: str = Query(...),
-    _from: Optional[str] = Query(default=None, alias="from"),
-    to: Optional[str] = Query(default=None),
-    sort: str = Query(default="ts:desc"),
+    market_id: str = Query(..., description="Market identifier"),
+    _from: Optional[str] = Query(default=None, alias="from", description="Start time (ISO8601)"),
+    to: Optional[str] = Query(default=None, description="End time (ISO8601)"),
+    sort: str = Query(default="ts:desc", description="Sort by ts asc|desc"),
     cursor: str | None = Query(default=None, description="Opaque cursor from previous page"),
-    limit: int = Query(default=100, ge=1, le=1000),
+    limit: int = Query(default=100, ge=1, le=1000, description="Page size (max 1000)"),
     client: OpenSearch = Depends(get_client),
 ) -> dict:
     sort_field, order = (sort.split(":", 1) + ["desc"])[:2]

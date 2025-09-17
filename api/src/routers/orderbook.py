@@ -14,11 +14,15 @@ router = APIRouter(
 )
 
 
-@router.get("")
+@router.get(
+    "",
+    summary="Get order book snapshot",
+    description="Get latest or time-aligned order book snapshot for a market and side.",
+)
 async def get_orderbook(
-    market_id: str = Query(...),
-    side: str = Query("bid", pattern="^(bid|ask)$"),
-    at: Optional[str] = Query(default=None),
+    market_id: str = Query(..., description="Market identifier"),
+    side: str = Query("bid", pattern="^(bid|ask)$", description="Book side"),
+    at: Optional[str] = Query(default=None, description="If set, returns the snapshot at/just before this time"),
     client: OpenSearch = Depends(get_client),
 ) -> dict:
     if at:

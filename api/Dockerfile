@@ -15,8 +15,10 @@ ENV ADMIN_TEMPLATES_DIR=/app/src/admin/templates
 
 ENV API_BIND_HOST=0.0.0.0
 ENV API_BIND_PORT=8080
+ENV API_DEBUG=false
+ENV LOG_LEVEL=info
 
 EXPOSE 8080
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080", "--log-level", "${LOG_LEVEL}"]
 

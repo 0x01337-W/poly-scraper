@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI, Request
+import logging
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.routers.health import router as health_router
@@ -11,7 +12,27 @@ from src.auth.key_store import ApiKeyStore, bootstrap_default_key
 
 
 def create_app() -> FastAPI:
-    application = FastAPI(title="Polymarket Data API", version="0.1.0")
+    debug = os.getenv("API_DEBUG", "false").lower() == "true"
+    openapi_url = "/openapi.json" if debug else None
+    docs_url = "/docs" if debug else None
+    redoc_url = "/redoc" if debug else None
+    tags_metadata = [
+        {"name": "health", "description": "Service health and readiness."},
+        {"name": "markets", "description": "Market metadata search and lookup."},
+        {"name": "trades", "description": "Raw trades with time windows and pagination."},
+        {"name": "candles", "description": "Derived OHLCV by interval."},
+        {"name": "orderbook", "description": "Order book snapshot access."},
+    ]
+    application = FastAPI(
+        title="Polymarket Data API",
+        version="0.1.0",
+        debug=debug,
+        openapi_url=openapi_url,
+        docs_url=docs_url,
+        redoc_url=redoc_url,
+        openapi_tags=tags_metadata,
+        description="Self-hosted, read-only Polymarket data API."
+    )
 
     # Routers
     application.include_router(health_router)
@@ -52,6 +73,11 @@ def create_app() -> FastAPI:
         except Exception:
             pass
         return response
+
+    # Configure logging level
+    level = os.getenv("LOG_LEVEL", "info").lower()
+    level_map = {"debug": logging.DEBUG, "info": logging.INFO, "warning": logging.WARNING, "error": logging.ERROR}
+    logging.getLogger().setLevel(level_map.get(level, logging.INFO))
 
     return application
 

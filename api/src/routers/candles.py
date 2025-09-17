@@ -13,12 +13,16 @@ router = APIRouter(
 )
 
 
-@router.get("")
+@router.get(
+    "",
+    summary="List candles",
+    description="Return OHLCV candles for a market and interval within a time range.",
+)
 async def list_candles(
-    market_id: str = Query(...),
-    interval: str = Query(..., pattern="^(1m|5m|1h)$"),
-    _from: str = Query(..., alias="from"),
-    to: str = Query(...),
+    market_id: str = Query(..., description="Market identifier"),
+    interval: str = Query(..., pattern="^(1m|5m|1h)$", description="Candle interval"),
+    _from: str = Query(..., alias="from", description="Start time (ISO8601)"),
+    to: str = Query(..., description="End time (ISO8601)"),
     client: OpenSearch = Depends(get_client),
 ) -> dict:
     body = {
