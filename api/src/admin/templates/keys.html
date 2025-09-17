@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>API Keys</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
+  </head>
+  <body>
+    <main class="container">
+      <nav>
+        <ul>
+          <li><strong>PolyScraper Admin</strong></li>
+        </ul>
+        <ul>
+          <li><a href="/admin">Dashboard</a></li>
+          <li>
+            <form method="post" action="/admin/logout">
+              <button type="submit" class="secondary">Logout</button>
+            </form>
+          </li>
+        </ul>
+      </nav>
+      <article>
+        <h1>API Keys</h1>
+        <p><a href="/admin/keys/new">Create new key</a></p>
+        <table>
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Plan</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Expires</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for k in keys %}
+            <tr>
+              <td><code>{{ k.key }}</code></td>
+              <td>{{ k.plan_type }}</td>
+              <td>{{ k.status }}</td>
+              <td>{{ k.created_at }}</td>
+              <td>{{ k.expires_at or '-' }}</td>
+              <td>
+                {% if k.status != 'revoked' %}
+                <form method="post" action="/admin/keys/{{ k.key }}/revoke" onsubmit="return confirm('Revoke this key?');">
+                  <button type="submit" class="contrast">Revoke</button>
+                </form>
+                {% else %}
+                Revoked
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </article>
+    </main>
+  </body>
+  </html>
+
+

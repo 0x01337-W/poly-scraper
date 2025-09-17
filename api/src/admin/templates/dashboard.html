@@ -23,7 +23,17 @@
       </nav>
       <article>
         <h1>Dashboard</h1>
-        <p>Welcome. More status cards coming in next phases.</p>
+        <h3>OpenSearch</h3>
+        <ul>
+          <li>Status: {{ health.status if health else 'unknown' }}</li>
+        </ul>
+        <h3>Indices (doc counts)</h3>
+        <ul>
+          {% for name, count in indices.items() %}
+          <li><strong>{{ name }}</strong>: {{ count if count is not none else 'n/a' }}</li>
+          {% endfor %}
+        </ul>
+        <p><a href="/admin/keys">Manage API keys</a></p>
       </article>
     </main>
   </body>

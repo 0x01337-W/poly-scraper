@@ -12,6 +12,16 @@ CREATE TABLE IF NOT EXISTS api_keys (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   expires_at TEXT
 );
+CREATE TABLE IF NOT EXISTS api_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts TEXT NOT NULL DEFAULT (datetime('now')),
+  api_key TEXT,
+  method TEXT NOT NULL,
+  path TEXT NOT NULL,
+  status INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_api_requests_ts ON api_requests(ts);
+CREATE INDEX IF NOT EXISTS idx_api_requests_key ON api_requests(api_key);
 """
 
 
@@ -64,6 +74,31 @@ class ApiKeyStore:
                 if expired:
                     return False
             return True
+
+    def log_request(self, api_key: str | None, method: str, path: str, status: int) -> None:
+        with self._get_conn() as conn:
+            conn.execute(
+                "INSERT INTO api_requests(api_key, method, path, status) VALUES(?,?,?,?)",
+                (api_key, method, path, status),
+            )
+            conn.commit()
+
+    def metrics_last_24h(self) -> list[tuple[str | None, int, int, int, int]]:
+        with self._get_conn() as conn:
+            cur = conn.execute(
+                """
+                SELECT api_key,
+                       COUNT(*) AS total,
+                       SUM(CASE WHEN status BETWEEN 200 AND 299 THEN 1 ELSE 0 END) AS s2xx,
+                       SUM(CASE WHEN status BETWEEN 400 AND 499 THEN 1 ELSE 0 END) AS s4xx,
+                       SUM(CASE WHEN status >= 500 THEN 1 ELSE 0 END) AS s5xx
+                FROM api_requests
+                WHERE ts >= datetime('now', '-1 day')
+                GROUP BY api_key
+                ORDER BY total DESC
+                """
+            )
+            return cur.fetchall()
 
 
 def bootstrap_default_key(store: ApiKeyStore) -> None:

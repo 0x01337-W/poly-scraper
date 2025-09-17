@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Candles</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
+  </head>
+  <body>
+    <main class="container">
+      <nav>
+        <ul>
+          <li><strong>PolyScraper Admin</strong></li>
+        </ul>
+        <ul>
+          <li><a href="/admin">Dashboard</a></li>
+        </ul>
+      </nav>
+      <article>
+        <h1>Candles</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>open_time</th>
+              <th>open</th>
+              <th>high</th>
+              <th>low</th>
+              <th>close</th>
+              <th>volume</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+            <tr>
+              <td>{{ r.open_time }}</td>
+              <td>{{ r.open }}</td>
+              <td>{{ r.high }}</td>
+              <td>{{ r.low }}</td>
+              <td>{{ r.close }}</td>
+              <td>{{ r.volume }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </article>
+    </main>
+  </body>
+  </html>
+
+

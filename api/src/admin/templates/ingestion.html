@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ingestion Status</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
+  </head>
+  <body>
+    <main class="container">
+      <nav>
+        <ul>
+          <li><strong>PolyScraper Admin</strong></li>
+        </ul>
+        <ul>
+          <li><a href="/admin">Dashboard</a></li>
+        </ul>
+      </nav>
+      <article>
+        <h1>Ingestion Status</h1>
+        <h3>Heartbeat</h3>
+        <pre>{{ status.heartbeat | tojson(indent=2) }}</pre>
+        <h3>Trades Checkpoint</h3>
+        <pre>{{ status.checkpoints.trades | tojson(indent=2) }}</pre>
+        <h3>Candles Checkpoints</h3>
+        <pre>{{ status.checkpoints.candles | tojson(indent=2) }}</pre>
+        <h3>Orderbook Checkpoint</h3>
+        <pre>{{ status.checkpoints.orderbook | tojson(indent=2) }}</pre>
+      </article>
+    </main>
+  </body>
+  </html>
+
+

@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orderbook</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
+  </head>
+  <body>
+    <main class="container">
+      <nav>
+        <ul>
+          <li><strong>PolyScraper Admin</strong></li>
+        </ul>
+        <ul>
+          <li><a href="/admin">Dashboard</a></li>
+        </ul>
+      </nav>
+      <article>
+        <h1>Orderbook Snapshot</h1>
+        {% if doc and doc.levels %}
+        <h3>Bids/Asks</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>level</th>
+              <th>price</th>
+              <th>size</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lvl in doc.levels %}
+            <tr>
+              <td>{{ lvl.level }}</td>
+              <td>{{ lvl.price }}</td>
+              <td>{{ lvl.size }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p>No snapshot found.</p>
+        {% endif %}
+      </article>
+    </main>
+  </body>
+  </html>
+
+

@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.routers.health import router as health_router
@@ -40,6 +40,18 @@ def create_app() -> FastAPI:
         store = ApiKeyStore(db_path)
         application.state.api_key_store = store
         bootstrap_default_key(store)
+
+    @application.middleware("http")
+    async def _metrics_mw(request: Request, call_next):
+        response = await call_next(request)
+        try:
+            # Skip admin routes from metrics
+            if not request.url.path.startswith("/admin"):
+                key = getattr(request.state, "api_key", None)
+                application.state.api_key_store.log_request(key, request.method, request.url.path, response.status_code)
+        except Exception:
+            pass
+        return response
 
     return application
 

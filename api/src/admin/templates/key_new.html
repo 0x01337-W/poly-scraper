@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>New API Key</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
+  </head>
+  <body>
+    <main class="container">
+      <nav>
+        <ul>
+          <li><strong>PolyScraper Admin</strong></li>
+        </ul>
+        <ul>
+          <li><a href="/admin">Dashboard</a></li>
+          <li><a href="/admin/keys">Keys</a></li>
+          <li>
+            <form method="post" action="/admin/logout">
+              <button type="submit" class="secondary">Logout</button>
+            </form>
+          </li>
+        </ul>
+      </nav>
+      <article>
+        <h1>Create API Key</h1>
+        {% if error %}<mark>{{ error }}</mark>{% endif %}
+        <form method="post" action="/admin/keys/new">
+          <label>Key (optional; generated if blank)
+            <input type="text" name="key" />
+          </label>
+          <label>Plan Type
+            <select name="plan_type">
+              <option value="monthly">monthly</option>
+              <option value="weekly">weekly</option>
+            </select>
+          </label>
+          <label>Expires At (ISO8601; optional)
+            <input type="text" name="expires_at" placeholder="2025-12-31T23:59:59Z" />
+          </label>
+          <button type="submit">Create</button>
+        </form>
+      </article>
+    </main>
+  </body>
+  </html>
+
+

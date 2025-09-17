@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trades</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css" />
+  </head>
+  <body>
+    <main class="container">
+      <nav>
+        <ul>
+          <li><strong>PolyScraper Admin</strong></li>
+        </ul>
+        <ul>
+          <li><a href="/admin">Dashboard</a></li>
+        </ul>
+      </nav>
+      <article>
+        <h1>Trades ({{ market_id }})</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>ts</th>
+              <th>price</th>
+              <th>size</th>
+              <th>side</th>
+              <th>_index</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+            <tr>
+              <td>{{ r.ts }}</td>
+              <td>{{ r.price }}</td>
+              <td>{{ r.size }}</td>
+              <td>{{ r.side }}</td>
+              <td>{{ r._index }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </article>
+    </main>
+  </body>
+  </html>
+
+

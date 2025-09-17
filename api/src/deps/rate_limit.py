@@ -36,6 +36,9 @@ _buckets: dict[str, TokenBucket] = {}
 
 
 def require_rate_limit(request: Request) -> None:
+    # Exempt admin routes from public rate limiting
+    if request.url.path.startswith("/admin"):
+        return
     key = getattr(request.state, "api_key", None)
     if not key:
         # Auth must run first
