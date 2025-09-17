@@ -4,16 +4,34 @@
 Build a self-hosted, read-only SaaS-style data platform for Polymarket that continuously ingests public data, indexes it for fast querying, and exposes a clean REST/JSON API secured by API keys. Optional: a small frontend portal for docs and key management. All components live in a single monorepo with clear separation: `ingester/`, `database/`, `api/`, `frontend/`.
 
 ### Progress tracker (high-level delivery phases)
-- **Phase 0 – Monorepo scaffold**: 0% 
-- **Phase 1 – Ingestion (REST backfill + polling)**: 0%
-- **Phase 2 – OpenSearch indices + ILM (90-day retention)**: 0%
-- **Phase 3 – REST API (FastAPI) + API key auth**: 0%
+- **Phase 0 – Monorepo scaffold**: 100%
+- **Phase 1 – Ingestion (REST backfill + polling)**: 60%
+- **Phase 2 – OpenSearch indices + ILM (90-day retention)**: 100%
+- **Phase 3 – REST API (FastAPI) + API key auth**: 80%
 - **Phase 4 – Optional frontend portal**: 0%
 - **Phase 5 – Optional WebSocket MARKET stream**: 0%
 
 Session log notes will be appended under each phase during implementation.
 
 ---
+
+## Current progress (2025-09-17)
+
+- **What is done**
+  - Monorepo scaffold, Docker Compose, and volumes; `env.example` updated.
+  - OpenSearch templates with 90-day ISM policy and initial indices; setup script.
+  - API (FastAPI) with API-key auth; routes: `/health`, `/v1/markets`, `/v1/trades`, `/v1/candles`, `/v1/orderbook`.
+  - Ingester: markets poller (Gamma) and feature-flagged trades worker (Data-API); bulk indexing.
+
+- **What is still to be done**
+  - Trades backfill completeness, idempotency/dedup; derive candles pipeline; orderbook snapshots strategy.
+  - Rate limiting and per-key quotas; `GET /v1/markets/{market_id}`; stricter request/response validation and error envelopes.
+  - Optional frontend portal and admin key management CLI; endpoint docs/examples.
+
+- **What is missing/blockers**
+  - Confirm exact Data-API endpoints and pagination for trades; finalize payload-to-schema mapping.
+  - Decision on enabling WebSocket MARKET for book deltas (post-MVP).
+  - Define acceptance checks for data completeness for initial markets set.
 
 ## 1) Goals, constraints, and non-goals
 
