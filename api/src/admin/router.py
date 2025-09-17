@@ -2,7 +2,7 @@ import os
 import secrets
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Form, Request, Response, status
+from fastapi import APIRouter, Depends, Form, Request, Response, status, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from passlib.hash import bcrypt
 from starlette.templating import Jinja2Templates
@@ -24,7 +24,8 @@ def _is_logged_in(request: Request) -> bool:
 
 def require_admin(request: Request) -> None:
     if not _is_logged_in(request):
-        raise RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
+        # Use HTTPException to trigger redirect
+        raise HTTPException(status_code=status.HTTP_302_FOUND, headers={"Location": "/admin/login"})
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -38,8 +39,20 @@ async def login_page(request: Request) -> HTMLResponse:
 async def login(request: Request, username: str = Form(...), password: str = Form(...)) -> Response:
     expected_user = os.getenv("ADMIN_USERNAME", "admin")
     expected_hash = os.getenv("ADMIN_PASSWORD_HASH", "")
-    if username != expected_user or not expected_hash or not bcrypt.verify(password, expected_hash):
-        return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"}, status_code=status.HTTP_401_UNAUTHORIZED)
+    expected_plain = os.getenv("ADMIN_PASSWORD", "")
+    valid = False
+    if username == expected_user:
+        if expected_hash:
+            try:
+                valid = bcrypt.verify(password, expected_hash)
+            except Exception:
+                valid = False
+        elif expected_plain:
+            valid = secrets.compare_digest(password, expected_plain)
+    if not valid:
+        return templates.TemplateResponse(
+            "login.html", {"request": request, "error": "Invalid credentials"}, status_code=status.HTTP_401_UNAUTHORIZED
+        )
     request.session["admin_auth"] = True
     return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
 
