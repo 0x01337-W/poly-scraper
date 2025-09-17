@@ -133,6 +133,24 @@ def to_es_doc(trade: dict[str, Any]) -> dict[str, Any]:
     if "side" in trade and isinstance(trade["side"], str):
         out["side"] = trade["side"].lower()
 
+    # optional known fields from Polymarket payloads
+    for key, t in (
+        ("market_order_id", str),
+        ("bucket_index", int),
+        ("status", str),
+    ):
+        if key in trade:
+            try:
+                out[key] = t(trade[key])  # type: ignore
+            except Exception:
+                pass
+    if "match_time" in trade:
+        try:
+            dt = datetime.fromisoformat(str(trade["match_time"]).replace("Z", "+00:00")).astimezone(timezone.utc)
+            out["match_time"] = dt.isoformat()
+        except Exception:
+            pass
+
     return out
 
 

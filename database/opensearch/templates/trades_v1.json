@@ -14,7 +14,11 @@
         "ts": {"type": "date"},
         "price": {"type": "float"},
         "size": {"type": "float"},
-        "side": {"type": "keyword"}
+        "side": {"type": "keyword"},
+        "market_order_id": {"type": "keyword"},
+        "match_time": {"type": "date"},
+        "bucket_index": {"type": "integer"},
+        "status": {"type": "keyword"}
       }
     }
   },

@@ -28,8 +28,9 @@
 - Worker scans trades within each interval, computes OHLCV, and advances a checkpoint per interval.
 
 ### Orderbook snapshots (planned)
+### Orderbook snapshots
 - Periodic top-N depth snapshots by side; key `(market_id, ts, side)`.
-- Optional WS consumer to capture deltas; reconcile with periodic authoritative snapshots.
+- Configurable `ORDERBOOK_MARKET_IDS` to limit scope; future WS deltas can be added post-MVP.
 
 ### Configuration
 - Poll intervals: `POLL_INTERVAL_MARKETS_MS`, `POLL_INTERVAL_TRADES_MS`.
@@ -37,6 +38,7 @@
 - OpenSearch connection: `OPENSEARCH_URL`, credentials.
 - Trades backfill: `TRADES_PAGE_SIZE`, `TRADES_BACKFILL_DAYS`, `TRADES_BACKFILL_WINDOW_MINUTES`, `TRADES_CHECKPOINT_PATH`.
 - Candles: `ENABLE_CANDLES_WORKER`, `CANDLES_INTERVALS`, `CANDLES_LOOKBACK_MINUTES`, `CANDLES_TRADES_FETCH_LIMIT`, `CANDLES_POLL_MS`, `CANDLES_CHECKPOINT_DIR`.
+- Orderbook: `ENABLE_ORDERBOOK_WORKER`, `ORDERBOOK_MARKET_IDS`, `ORDERBOOK_DEPTH`, `ORDERBOOK_POLL_MS`, `ORDERBOOK_CHECKPOINT_PATH`, `POLYMARKET_CLOB_BASE`.
 
 ### Operational notes
 - OpenSearch in this stack is HTTPS; set `OPENSEARCH_URL=https://opensearch:9200` inside Docker.
