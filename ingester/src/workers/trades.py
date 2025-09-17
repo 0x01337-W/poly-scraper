@@ -11,7 +11,7 @@ POLYMARKET_TRADES_BASE = os.getenv("POLYMARKET_TRADES_BASE", "")
 
 
 def get_client() -> OpenSearch:
-    url = os.getenv("OPENSEARCH_URL", "https://localhost:9200")
+    url = os.getenv("OPENSEARCH_URL", "https://opensearch:9200")
     user = os.getenv("OPENSEARCH_USER", "")
     password = os.getenv("OPENSEARCH_PASSWORD", "")
     auth = (user, password) if user and password else None

@@ -10,7 +10,7 @@ POLYMARKET_GAMMA_BASE = os.getenv("POLYMARKET_GAMMA_BASE", "https://gamma-api.po
 
 
 def get_client() -> OpenSearch:
-    url = os.getenv("OPENSEARCH_URL", "https://localhost:9200")
+    url = os.getenv("OPENSEARCH_URL", "https://opensearch:9200")
     user = os.getenv("OPENSEARCH_USER", "")
     password = os.getenv("OPENSEARCH_PASSWORD", "")
     auth = (user, password) if user and password else None
